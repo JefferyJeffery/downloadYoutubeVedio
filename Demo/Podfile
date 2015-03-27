@@ -1,0 +1,15 @@
+# Uncomment this line to define a global platform for your project
+# platform :ios, '7.0'
+
+target 'downloadYouTubeVideo' do
+pod 'ReactiveCocoa', '2.4.7'
+
+# network
+pod 'AFNetworking', '~> 2.5'
+pod 'HCYoutubeParser', '~> 0.0'
+end
+
+target 'downloadYouTubeVideoTests' do
+
+end
+
