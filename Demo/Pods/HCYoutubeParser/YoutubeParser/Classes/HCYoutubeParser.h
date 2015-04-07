@@ -27,6 +27,17 @@
 
 #import <Foundation/Foundation.h>
 
+NSString * const kYoutubeInfoStatus;
+NSString * const vYoutubeStatusOK;
+NSString * const vYoutubeStatusFail;
+
+NSString * const kYoutubeErrorReason;
+
+NSString * const kYoutubeVideoHD720;
+NSString * const kYoutubeVideoMedium;
+NSString * const kYoutubeVideoSmall;
+NSString * const kYoutubeVideoLive;
+
 typedef enum {
     YouTubeThumbnailDefault,
     YouTubeThumbnailDefaultMedium,

@@ -6,7 +6,7 @@ pod 'ReactiveCocoa', '2.4.7'
 
 # network
 pod 'AFNetworking', '~> 2.5'
-pod 'HCYoutubeParser', '~> 0.0'
+pod 'HCYoutubeParser', :git => 'https://github.com/JefferyJeffery/HCYoutubeParser.git', :branch => 'develop'
 end
 
 target 'downloadYouTubeVideoTests' do

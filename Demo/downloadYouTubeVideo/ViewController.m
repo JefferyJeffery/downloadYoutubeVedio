@@ -18,6 +18,8 @@
 @interface ViewController () <UITextFieldDelegate>
 @property (weak, nonatomic) IBOutlet UITextField *vedioKeyTextField;
 @property (weak, nonatomic) IBOutlet UIView *videoView;
+@property (weak, nonatomic) IBOutlet UILabel *statusLbl;
+@property (weak, nonatomic) IBOutlet UIProgressView *progrssBar;
 
 @property (strong, nonatomic) AVPlayerViewController *playerViewController;
 @end
@@ -29,6 +31,9 @@
     // Do any additional setup after loading the view, typically from a nib.
     
     self.playerViewController = [[AVPlayerViewController alloc] init];
+    
+    [self.progrssBar setProgress:0];
+    self.statusLbl.text = @"";
 }
 
 -(void)viewDidAppear:(BOOL)animated
@@ -47,57 +52,77 @@
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField
 {
-    [HCYoutubeParser detailsForYouTubeURL:[NSURL URLWithString:textField.text] completeBlock:^(NSDictionary *details, NSError *error) {
-        NSLog(@"details = %@",details);
-    }];
+    [self.progrssBar setProgress:0];
+    self.statusLbl.text = @"";
+    
+//    [HCYoutubeParser detailsForYouTubeURL:[NSURL URLWithString:textField.text] completeBlock:^(NSDictionary *details, NSError *error) {
+//        NSLog(@"details = %@",details);
+//    }];
     
     [HCYoutubeParser h264videosWithYoutubeURL:[NSURL URLWithString:textField.text] completeBlock:^(NSDictionary *videoDictionary, NSError *error) {
         NSLog(@"videoDictionary = %@",videoDictionary);
         
         //http://stackoverflow.com/questions/8372661/how-to-download-a-file-and-save-it-to-the-documents-directory-with-afnetworking
-        
-//        videoDictionary[@"hd720"]
-//        videoDictionary[@"small"]
-        NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:videoDictionary[@"small"]] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0f];
-        
-        AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-        
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-        NSString *path = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"filename.mov"];
-        operation.outputStream = [NSOutputStream outputStreamToFileAtPath:path append:NO];
-
-        
-        [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead) {
-            NSLog(@"totalBytesRead = %@",@(totalBytesRead));
-            NSLog(@"bytesRead = %@",@(bytesRead));
-            NSLog(@"totalBytesExpectedToRead = %@",@(totalBytesExpectedToRead));
-        }];
-        
-        
-        [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-//            NSData *data = [[NSData alloc] initWithData:responseObject];
+        if ([[videoDictionary objectForKey:kYoutubeInfoStatus] isEqualToString:vYoutubeStatusOK]) {
             
-            NSLog(@"Successfully downloaded file to %@", path);
+            NSString *URLString;
+            NSString *VideoLiveURLString;
+            if ([videoDictionary objectForKey:kYoutubeVideoHD720] != nil) {
+                URLString = [videoDictionary objectForKey:kYoutubeVideoHD720];
+            } else if ([videoDictionary objectForKey:kYoutubeVideoMedium] != nil) {
+                URLString = [videoDictionary objectForKey:kYoutubeVideoMedium];
+            } else if ([videoDictionary objectForKey:kYoutubeVideoSmall] != nil) {
+                URLString = [videoDictionary objectForKey:kYoutubeVideoSmall];
+            } else if ([videoDictionary objectForKey:kYoutubeVideoLive] != nil) {
+                VideoLiveURLString = [videoDictionary objectForKey:kYoutubeVideoLive];
+            } else {
+                self.statusLbl.text = @"Couldn't find youtube video";
+            }
             
-//            NSString *docDir1 = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,   NSUserDomainMask, YES) objectAtIndex:0];
-//            
-//            NSString *myfilepath = [docDir1 stringByAppendingPathComponent:@"filename.mov"];
-//            
-//            NSLog(@"url:%@",myfilepath);
+            if (URLString) {
+                NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:30.0f];
+                
+                AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+                
+                NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+                NSString *path = [[paths objectAtIndex:0] stringByAppendingPathComponent:@"filename.mov"];
+                operation.outputStream = [NSOutputStream outputStreamToFileAtPath:path append:NO];
+                
+                [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead) {
+                    float progress = (float)totalBytesRead / (float)totalBytesExpectedToRead;
+                    
+                    [self.progrssBar setProgress:progress animated:YES];
+                }];
+                
+                [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+                    
+                    AVPlayer *player = [AVPlayer playerWithURL:[NSURL fileURLWithPath:path]];
+                    
+                    NSLog(@"player:%@",player);
+                    self.playerViewController.player = player;
+                    
+                    [self.playerViewController.player addObserver:self forKeyPath:@"status" options:0 context:nil];
+                    [self.playerViewController.player play];
+                    
+                } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+                    self.statusLbl.text = error.description;
+                }];
+                [operation start];
+            } else if (VideoLiveURLString) {
+                AVPlayer *player = [AVPlayer playerWithURL:[NSURL URLWithString:VideoLiveURLString]];
+                
+                NSLog(@"player:%@",player);
+                self.playerViewController.player = player;
+                
+                [self.playerViewController.player addObserver:self forKeyPath:@"status" options:0 context:nil];
+                [self.playerViewController.player play];
             
-            AVPlayer *player = [AVPlayer playerWithURL:[NSURL fileURLWithPath:path]];
+            }
             
-            NSLog(@"player:%@",player);
-            self.playerViewController.player = player;
-            
-            [self.playerViewController.player addObserver:self forKeyPath:@"status" options:0 context:nil];
-            [self.playerViewController.player play];
-            
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-            
-            NSLog(@"error.description = %@",error.description);
-        }];
-        [operation start];
+        } else {
+            NSString *YoutubeErrorReason = [videoDictionary objectForKey:kYoutubeErrorReason];
+            self.statusLbl.text = YoutubeErrorReason;
+        }
     }];
     
     [textField resignFirstResponder];

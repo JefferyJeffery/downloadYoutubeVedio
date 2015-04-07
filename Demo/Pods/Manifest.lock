@@ -31,12 +31,23 @@ PODS:
 
 DEPENDENCIES:
   - AFNetworking (~> 2.5)
-  - HCYoutubeParser (~> 0.0)
+  - HCYoutubeParser (from `https://github.com/JefferyJeffery/HCYoutubeParser.git`,
+    branch `develop`)
   - ReactiveCocoa (= 2.4.7)
+
+EXTERNAL SOURCES:
+  HCYoutubeParser:
+    :branch: develop
+    :git: https://github.com/JefferyJeffery/HCYoutubeParser.git
+
+CHECKOUT OPTIONS:
+  HCYoutubeParser:
+    :commit: 364887b875b04d84b14c427f0b283f6f912666ff
+    :git: https://github.com/JefferyJeffery/HCYoutubeParser.git
 
 SPEC CHECKSUMS:
   AFNetworking: 2be4ecbe962afc43260cb49d18588c7c16b9de33
-  HCYoutubeParser: d34dd9ed2e919cc4d2c7d7e487347a22f857b2f0
+  HCYoutubeParser: 74df8bd4d6e30f6a102365b365a7fcea6c633612
   ReactiveCocoa: 59c2b09bfbda1465aba588abf5ea26fdeb892123
 
 COCOAPODS: 0.36.1
